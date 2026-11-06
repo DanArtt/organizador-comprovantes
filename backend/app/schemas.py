@@ -1,4 +1,8 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from .models import StatusDocumento
 
 
 class UsuarioCriar(BaseModel):
@@ -18,3 +22,11 @@ class UsuarioSaida(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class DocumentoSaida(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    status: StatusDocumento
+    criado_em: datetime

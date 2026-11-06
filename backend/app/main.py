@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from . import models  # noqa: F401  (importar registra as tabelas no Base)
 from .database import Base, engine, get_db
-from .routers import auth
+from .routers import auth, documentos
 
 
 @asynccontextmanager
@@ -28,6 +28,7 @@ app.add_middleware(
 
 
 app.include_router(auth.router)
+app.include_router(documentos.router)
 
 
 @app.get("/saude")
