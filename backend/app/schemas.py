@@ -1,7 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from .ia import Categoria
 from .models import StatusDocumento
 
 
@@ -30,3 +32,29 @@ class DocumentoSaida(BaseModel):
     id: int
     status: StatusDocumento
     criado_em: datetime
+
+
+class LancamentoSaida(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    documento_id: int
+    fornecedor: str | None
+    valor: Decimal | None
+    data: date | None
+    categoria: str | None
+    confianca: Decimal | None
+    revisado: bool
+
+
+class LancamentoRevisao(BaseModel):
+    """Correções enviadas pelo usuário. Todos os campos são opcionais."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    fornecedor: str | None = Field(default=None, min_length=1, max_length=200)
+    valor: Decimal | None = Field(
+        default=None, gt=0, max_digits=12, decimal_places=2
+    )
+    data: date | None = None
+    categoria: Categoria | None = None

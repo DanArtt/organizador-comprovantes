@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -7,7 +8,11 @@ from sqlalchemy.orm import Session
 
 from . import models  # noqa: F401  (importar registra as tabelas no Base)
 from .database import Base, engine, get_db
-from .routers import auth, documentos
+from .routers import auth, documentos, lancamentos
+
+
+# Mostra no terminal as mensagens informativas do app (ex.: tentativas da IA).
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager
@@ -29,6 +34,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(documentos.router)
+app.include_router(lancamentos.router)
 
 
 @app.get("/saude")

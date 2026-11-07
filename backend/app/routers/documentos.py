@@ -1,13 +1,15 @@
 import uuid
+from decimal import Decimal
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .. import ia
 from ..database import get_db
-from ..models import Documento, StatusDocumento, Usuario
-from ..schemas import DocumentoSaida
+from ..models import Documento, Lancamento, StatusDocumento, Usuario
+from ..schemas import DocumentoSaida, LancamentoSaida
 from .auth import usuario_atual
 
 router = APIRouter(prefix="/documentos", tags=["documentos"])
@@ -24,12 +26,29 @@ ASSINATURAS = [
     (b"%PDF-", ".pdf"),
 ]
 
+MIME_POR_EXTENSAO = {
+    ".jpg": "image/jpeg",
+    ".png": "image/png",
+    ".pdf": "application/pdf",
+}
+
 
 def detectar_extensao(inicio: bytes) -> str | None:
     for assinatura, extensao in ASSINATURAS:
         if inicio.startswith(assinatura):
             return extensao
     return None
+
+
+def buscar_documento(
+    documento_id: int, usuario: Usuario, db: Session
+) -> Documento:
+    documento = db.get(Documento, documento_id)
+    # Mesma resposta para "não existe" e "é de outro usuário",
+    # para não revelar quais ids existem.
+    if documento is None or documento.usuario_id != usuario.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Documento não encontrado")
+    return documento
 
 
 @router.post("", response_model=DocumentoSaida, status_code=status.HTTP_201_CREATED)
@@ -99,9 +118,61 @@ def obter(
     usuario: Usuario = Depends(usuario_atual),
     db: Session = Depends(get_db),
 ):
-    documento = db.get(Documento, documento_id)
-    # Mesma resposta para "não existe" e "é de outro usuário",
-    # para não revelar quais ids existem.
-    if documento is None or documento.usuario_id != usuario.id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Documento não encontrado")
-    return documento
+    return buscar_documento(documento_id, usuario, db)
+
+
+@router.post("/{documento_id}/processar", response_model=LancamentoSaida)
+def processar(
+    documento_id: int,
+    usuario: Usuario = Depends(usuario_atual),
+    db: Session = Depends(get_db),
+):
+    """Lê o comprovante com IA e salva os dados extraídos para revisão."""
+    documento = buscar_documento(documento_id, usuario, db)
+
+    if documento.status != StatusDocumento.pendente:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Este documento já foi processado")
+
+    caminho = PASTA_UPLOADS / documento.arquivo
+    if not caminho.is_file():
+        raise HTTPException(status.HTTP_410_GONE, "Arquivo não encontrado no servidor")
+
+    try:
+        dados = ia.extrair_dados(
+            caminho.read_bytes(), MIME_POR_EXTENSAO[caminho.suffix.lower()]
+        )
+    except ia.ErroIA as erro:
+        if erro.limite_excedido:
+            codigo = status.HTTP_429_TOO_MANY_REQUESTS
+        elif erro.indisponivel:
+            codigo = status.HTTP_503_SERVICE_UNAVAILABLE
+        else:
+            codigo = status.HTTP_502_BAD_GATEWAY
+        raise HTTPException(codigo, str(erro))
+
+    # A IA pode errar: garantimos que a confiança fique entre 0 e 1.
+    confianca = min(max(dados.confianca, 0.0), 1.0)
+
+    lancamento = Lancamento(
+        documento_id=documento.id,
+        fornecedor=dados.fornecedor,
+        valor=Decimal(str(round(dados.valor, 2))) if dados.valor is not None else None,
+        data=dados.data,
+        categoria=dados.categoria,
+        confianca=Decimal(str(round(confianca, 3))),
+        revisado=False,
+    )
+    documento.status = StatusDocumento.processado
+    db.add(lancamento)
+    db.commit()
+    db.refresh(lancamento)
+    return lancamento
+
+
+@router.get("/{documento_id}/lancamentos", response_model=list[LancamentoSaida])
+def listar_lancamentos(
+    documento_id: int,
+    usuario: Usuario = Depends(usuario_atual),
+    db: Session = Depends(get_db),
+):
+    return buscar_documento(documento_id, usuario, db).lancamentos
