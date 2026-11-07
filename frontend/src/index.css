@@ -258,3 +258,105 @@ input {
     display: none;
   }
 }
+
+/* Envio e lista de comprovantes */
+
+.painel main {
+  display: grid;
+  gap: 32px;
+  padding-top: 32px;
+}
+
+.painel h1,
+.painel h2 {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.envio {
+  display: grid;
+  gap: 12px;
+}
+
+.envio-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.envio-form input[type="file"] {
+  max-width: 100%;
+}
+
+.lista {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.item {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-left: 4px solid var(--carbono);
+  border-radius: var(--raio);
+}
+
+.item-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.item-titulo {
+  font-weight: 700;
+}
+
+.item-data {
+  color: var(--tinta-suave);
+  font-size: 0.9rem;
+}
+
+.item-topo .selo {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.selo-pendente {
+  border-color: var(--linha);
+  color: var(--tinta-suave);
+}
+
+.selo-revisado {
+  background: var(--carbono);
+  color: #ffffff;
+}
+
+.dados {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+}
+
+.dados dt {
+  color: var(--tinta-suave);
+}
+
+.dados dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.item-acao {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}

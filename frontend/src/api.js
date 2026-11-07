@@ -63,3 +63,17 @@ export async function entrar(email, senha) {
 }
 
 export const usuarioAtual = () => requisicao("/auth/eu");
+
+export const listarDocumentos = () => requisicao("/documentos");
+
+export function enviarDocumento(arquivo) {
+  const corpo = new FormData();
+  corpo.append("arquivo", arquivo);
+  return requisicao("/documentos", { method: "POST", body: corpo });
+}
+
+export const processarDocumento = (id) =>
+  requisicao(`/documentos/${id}/processar`, { method: "POST" });
+
+export const listarLancamentos = (id) =>
+  requisicao(`/documentos/${id}/lancamentos`);
