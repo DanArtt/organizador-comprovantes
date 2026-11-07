@@ -58,3 +58,18 @@ class LancamentoRevisao(BaseModel):
     )
     data: date | None = None
     categoria: Categoria | None = None
+
+
+class ItemCategoria(BaseModel):
+    categoria: str | None
+    total: Decimal
+    quantidade: int
+    percentual: float
+
+
+class ResumoSaida(BaseModel):
+    mes: str
+    total: Decimal
+    quantidade: int
+    por_categoria: list[ItemCategoria]
+    a_revisar: int

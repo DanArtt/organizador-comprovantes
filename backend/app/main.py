@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from . import models  # noqa: F401  (importar registra as tabelas no Base)
 from .database import Base, engine, get_db
-from .routers import auth, documentos, lancamentos
+from .routers import auth, documentos, lancamentos, resumo
 
 
 # Mostra no terminal as mensagens informativas do app (ex.: tentativas da IA).
@@ -35,6 +35,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(documentos.router)
 app.include_router(lancamentos.router)
+app.include_router(resumo.router)
 
 
 @app.get("/saude")
